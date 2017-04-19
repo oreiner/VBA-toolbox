@@ -318,9 +318,10 @@ function [E,V] = Dirichlet_moments(a)
 % derives the first- and second-order moments of a Dirichlet density
 a0 = sum(a);
 E = a./a0;
-V = -a*a';
-V = V - diag(diag(V)) + diag(a.*(a0-a));
-V = V./((a0+1)*a0^2);
+V = (a .* (a0-a)) ./ (a0.^2 * (a0+1));
+% V = -a*a';
+% V = V - diag(diag(V)) + diag(a.*(a0-a));
+% V = V./((a0+1)*a0^2);
 
 
 
