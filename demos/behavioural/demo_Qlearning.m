@@ -51,7 +51,7 @@ g_fname = @g_softmax; % observation function (softmax mapping)
 
 % provide dimensions
 dim = struct( ...
-    'n', 2, ... number of hidden states (2 Q-values)
+    'n', 6, ... number of hidden states (2 Q-values)
     'n_theta', 1, ... number of evolution parameters (1: learning rate)
     'n_phi', 1 ... number of observation parameters (1: temperature)
    );
@@ -59,8 +59,8 @@ dim = struct( ...
 % options for the simulation
 % -------------------------------------------------------------------------
 % use the default priors except for the initial state
-options.priors.muX0 = [0.5; 0.5];
-options.priors.SimaX0 = 0.1 * eye(2);
+options.priors.muX0 = [0.5; 0.5 ; 0.5; 0.5; 0.5; 0.5];
+options.priors.SimaX0 = 0.1 * eye(6);
 
 % options for the simulation
 % -------------------------------------------------------------------------
