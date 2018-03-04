@@ -38,7 +38,7 @@ alpha = sig(P); % sig: [-Inf,Inf] -> [0 1]
 % =========================================================================
 
 % get experimental conditions
-prevActionIdx = u(1)+1; % action 0 is first index
+prevActionIdx = u(1); % action 1 is first index
 feedback = u(2);
 
 % start with previous values
