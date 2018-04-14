@@ -59,15 +59,15 @@ dim = struct( ...
 % options for the simulation
 % -------------------------------------------------------------------------
 % use the default priors except for the initial state
-options.priors.muX0 = [0.5; 0.5 ; 0.5; 0.5; 0.5; 0.5];
-options.priors.SimaX0 = 0.1 * eye(6);
+options.priors.muX0 = [0.5; 0.5];
+options.priors.SimaX0 = 0.1 * eye(2);
 
 % options for the simulation
 % -------------------------------------------------------------------------
 % number of trials
 n_t = numel(choices); 
 % fitting binary data
-options.binomial = 1;
+options.binomial = 0;
 % Normally, the expected first observation is g(x1), ie. after
 % a first iteratition x1 = f(x0, u0). The skipf flag will prevent this evolution
 % and thus set x1 = x0
@@ -76,14 +76,15 @@ options.skipf = [1 zeros(1,n_t-1)];
 % invert model
 % =========================================================================
 [posterior, out] = VBA_NLStateSpaceModel(y, u, f_fname, g_fname, dim, options);
-
 % display estimated parameters:
 % -------------------------------------------------------------------------
 fprintf('=============================================================\n');
 fprintf('\nEstimated parameters: \n');
 fprintf('  - learning rate: %3.2f\n', sigm(posterior.muTheta));
 fprintf('  - inverse temp.: %3.2f\n\n', exp(posterior.muPhi));
+%fprintf('  - Action value results: %3.2f %3.2f %3.2f %3.2f %3.2f %3.2f \n', );
 fprintf('=============================================================\n');
+
 
 % invert model
 % =========================================================================
