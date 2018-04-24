@@ -43,7 +43,9 @@ end
 % reformat data
 % =========================================================================
 % observations
-y = data.choices;
+%change choices data to binomial format (was it the left or the right choice in the trial)
+%relative to trial pair [0,1] instead of absolute cue [1:6]
+y = +(data.choices == data.cues(2,:));
 
 % inputs
 u = [ nan, data.choices(1 : end - 1) ;  % previous choice

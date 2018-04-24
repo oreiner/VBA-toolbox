@@ -1,0 +1,13 @@
+%%run diffrent models (for example per subject once asym with default value
+%options.priors.SigmaTheta = diag([1 1]);
+%%temperature 
+options.priors.muPhi = log(2.5);
+options.priors.SigmaPhi = 0.1;
+%%and once symetrical with 
+%options.priors.SigmaTheta = diag([1 0]);
+
+%%then compare models by checking out.F for each model
+%%and checking both models across subjects with VBA_GroupBNC
+
+
+%%make sure feedback for test is nan!
