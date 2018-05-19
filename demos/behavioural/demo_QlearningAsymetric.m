@@ -1,4 +1,4 @@
-function [posterior, out] = demo_QlearningAsymetric (data)
+function [posterior, out] = demo_QlearningAsymetric (data, asym)
 % // VBA toolbox //////////////////////////////////////////////////////////
 %
 % [posterior, out] = demo_QlearningAsymetric ([data])
@@ -35,7 +35,10 @@ switch nargin
         fprintf ('No inputs provided, generating simulated behavior...\n\n');
         data = simulateQlearningAsym ();
     case 1
-        fprintf ('Performing inversion of provided behaviour...\n\n');
+        fprintf ('Performing inversion of provided behaviour for unified learning rate...\n\n');
+        asym = 0;
+    case 2
+        fprintf ('Performing inversion of provided behaviour for asymetrical learning rate...\n\n');
     otherwise
         error ('*** Wrong number of arguments.')
 end
@@ -45,13 +48,14 @@ end
 % observations
 %change choices data to binomial format (was it the left or the right choice in the trial)
 %relative to trial pair [0,1] instead of absolute cue [1:6]
-y = +(data.choices == data.cues(2,:));
+data.choices = +(data.choices == data.cues(2,:));			 
+y = data.choices;
 
 % inputs
-u = [ nan, data.choices(1 : end - 1) ;  % previous choice
-      nan, data.feedbacks(1 : end - 1) ; % previous feedback
-      nan(2,1), data.cues(:, 1 : end - 1) ; % previous pair
-      data.cues ]; % identity of the presented cues
+u = [ nan(1, 1), data.choices ;  % previous choice
+      nan(1, 1), data.feedbacks ; % previous feedback
+      nan(2, 1), data.cues ; % previous pair
+      data.cues, nan(2, 1)]; % identity of the presented cues
 
 % specify model
 % =========================================================================
@@ -71,16 +75,20 @@ dim = struct( ...
 options.priors.muX0 = 0.5 * ones (dim.n, 1);
 options.priors.SigmaX0 = 0.01 * eye (dim.n);
 
+%asymetrical with 
 %options.priors.SigmaTheta = diag([0.1 0.1]);
+options.priors.SigmaTheta = diag([1 asym]);
+
 
 options.priors.muPhi = log(2.5);
-options.priors.SigmaPhi = 0.1;
+options.priors.SigmaPhi = 1;
 
 % options for the simulation
 % -------------------------------------------------------------------------
 % number of trials
 n_t = numel(data.choices); 
 % fitting binary data
+%options.sources.type = 1;
 options.binomial = 1;
 options.verbose = false;
 
@@ -92,8 +100,11 @@ options.verbose = false;
 % -------------------------------------------------------------------------
 fprintf('=============================================================\n');
 fprintf('\nEstimated parameters: \n');
-fprintf('  - avg. learning rate: %3.2f\n', sigm(posterior.muTheta(1)));
-fprintf('  - learning rate asym: %3.2f\n', posterior.muTheta(2));
+fprintf('  (- avg. learning rate: %3.2f)\n', sigm(posterior.muTheta(1)));
+fprintf('  (- learning rate asym: %3.2f)\n', posterior.muTheta(2));
+
+fprintf('  - pos. learning rate: %3.2f\n', sigm(posterior.muTheta(1) + posterior.muTheta(2)));
+fprintf('  - neg. learning rate: %3.2f\n', sigm(posterior.muTheta(1) - posterior.muTheta(2)));
 fprintf('  - inverse temp.: %3.2f\n\n', exp(posterior.muPhi));
 fprintf('=============================================================\n');
 
@@ -112,8 +123,28 @@ if exist('simulation','var') % used simulated data from demo_QlearningSimulation
      );
 end
 
+% Recover predictions errors
+% =========================================================================
+% get cue values 
+Qvalues = posterior.muX;
+% trick: set learning rate to 1, no asymmetry, so that x(t+1) - x(t) = PE
+theta = [Inf; 0];
+% for each trial, recompute the state evolution
+for t = 1 : n_t
+    posterior.PE(t) = sum (f_QlearningAsym (Qvalues(:,t), theta, u(:,t+1), struct) - Qvalues(:,t));
+end
+% recover last probabilities for Vstate
+for i = 1:size(Qvalues,1)
+    for j = i+1:size(Qvalues,1)
+         posterior.probability(i,j) = g_QLearning ([Qvalues(i,n_t) Qvalues(j,n_t)], posterior.muPhi); 
+         posterior.probability(j,i) = g_QLearning ([Qvalues(j,n_t) Qvalues(i,n_t)], posterior.muPhi); % posterior.probability(j,i) =  1 - posterior.probability(i,j); 
+    end
 end
 
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function data = simulateQlearningAsym ()
 
 % training bloc
@@ -139,13 +170,11 @@ contingencies = contingencies(p);
 % testing bloc
 % -------------------------------------------------------------------------
 
-nTest = 1;
-
-test = [1 1 1 1 2 2 2 2;
+test = [1 1 1 1 2 2 2 2; % choose A and avoid B 
         3 4 5 6 3 4 5 6];
 
-test = repmat(test,1,nTest);
-
+test = repmat(test,1,0);
+    
 cues = [cues test];
 contingencies = [contingencies nan(1, size(test,2))];
    
@@ -178,13 +207,16 @@ x0 = 0.5 * ones(6,1);
 % number of trials
 n_t = numel(contingencies); 
 % fitting binary data
+%options.sources.type = 1;
 options.binomial = 1;
 options.verbose = false;
 
 % simulate choices
 % -------------------------------------------------------------------------
 
-u = [nan(2, n_t); cues];
+u = [nan(2, n_t); 
+    nan(2,1), cues(:, 1 : end - 1) ;
+    cues];
 
 [y,x,x0,eta,e,u] = simulateNLSS( ...
     n_t, ... number of trials
