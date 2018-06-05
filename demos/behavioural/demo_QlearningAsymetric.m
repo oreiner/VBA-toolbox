@@ -1,4 +1,4 @@
-function [posterior, out] = demo_QlearningAsymetric (data, asym)
+function [posterior, out] = demo_QlearningAsymetric (data, asym, SigmaPhi, muTheta, muPhi)
 % // VBA toolbox //////////////////////////////////////////////////////////
 %
 % [posterior, out] = demo_QlearningAsymetric ([data])
@@ -34,11 +34,31 @@ switch nargin
     case 0
         fprintf ('No inputs provided, generating simulated behavior...\n\n');
         data = simulateQlearningAsym ();
-    case 1
+    case 1 
         fprintf ('Performing inversion of provided behaviour for unified learning rate...\n\n');
-        asym = 0;
+        asym = 0; SigmaPhi=1;
     case 2
-        fprintf ('Performing inversion of provided behaviour for asymetrical learning rate...\n\n');
+        if asym
+            type = 'asymmetrical';
+        else
+            type = 'unified';
+        end
+        fprintf ('Performing inversion of provided behaviour for %s learning rate...\n\n', type);
+        SigmaPhi=1;
+    case 3
+        if asym
+            type = 'asymmetrical';
+        else
+            type = 'unified';
+        end
+        fprintf ('Performing inversion of provided behaviour for %s learning rate with SigmaPhi = %d...\n\n', type, SigmaPhi);
+    case {4,5}
+        if asym
+            type = 'asymmetrical';
+        else
+            type = 'unified';
+        end
+        fprintf ('Performing inversion of test phase for %s learning rate', type);
     otherwise
         error ('*** Wrong number of arguments.')
 end
@@ -79,9 +99,14 @@ options.priors.SigmaX0 = 0.01 * eye (dim.n);
 %options.priors.SigmaTheta = diag([0.1 0.1]);
 options.priors.SigmaTheta = diag([1 asym]);
 
-
 options.priors.muPhi = log(2.5);
-options.priors.SigmaPhi = 1;
+options.priors.SigmaPhi = SigmaPhi;
+
+if exist('muTheta') && exist ('muPhi')
+    options.priors.muTheta = muTheta;
+    options.priors.SigmaTheta = diag([0 0]);
+    options.priors.muPhi = muPhi;
+end
 
 % options for the simulation
 % -------------------------------------------------------------------------
